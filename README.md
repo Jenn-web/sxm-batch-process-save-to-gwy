@@ -10,6 +10,8 @@ Batch process STM data in `.sxm` format from a directory and save all to origina
   - Align rows using various methods (mean, median, match height)
   - Parabolic background subtraction
   - Remove scars (anomalous lines)
+  - **Mask unscanned areas**: Detect and mask regions filled with zeros or constant values
+  - **Handle outliers and sharp changes**: Clip or smooth extreme values that affect image quality
 - **Metadata preservation**: Saves as much information as possible from the original file
 - **In-situ saving**: New `.gwy` files are saved in the same location as the source `.sxm` files
 - **Compatible output**: Files can be read by the `gwyfile` module and processed further normally
@@ -69,6 +71,10 @@ Convert a single `.sxm` file to `.gwy` format with processing.
 - `parabolic_sub`: Apply parabolic subtraction (default: `True`)
 - `remove_scars_flag`: Remove scars (default: `True`)
 - `scar_threshold`: Threshold for scar detection in standard deviations (default: `3.0`)
+- `mask_unscanned`: Mask unscanned areas (zeros/constants) (default: `True`)
+- `handle_outliers_flag`: Handle outliers and sharp changes (default: `True`)
+- `outlier_method`: Outlier handling method - `'clip'`, `'percentile'`, or `'median_filter'` (default: `'percentile'`)
+- `outlier_sigma`: Sigma threshold for outlier detection (default: `3.0`)
 
 #### `batch_process_directory(directory, **options)`
 Process all `.sxm` files in directory tree and save as `.gwy` files.
@@ -91,6 +97,15 @@ Process all `.sxm` files in directory tree and save as `.gwy` files.
 #### Scar Removal
 Detects and removes anomalous horizontal and vertical lines using statistical analysis. The `scar_threshold` parameter controls sensitivity (lower = more sensitive).
 
+#### Unscanned Area Masking
+Detects and masks regions filled with zeros or constant values that can distort the color bar and hide useful information. When enabled (default), these areas are set to NaN and excluded from visualization scaling.
+
+#### Outlier Handling
+Handles sharp changes and extreme values that affect image quality and color scaling:
+- `'clip'`: Clips values beyond a certain number of standard deviations from the mean
+- `'percentile'`: Clips values to specified percentile bounds (default, robust method)
+- `'median_filter'`: Smooths extreme values using a median filter
+
 ## Examples
 
 ### Process with custom settings
@@ -98,7 +113,7 @@ Detects and removes anomalous horizontal and vertical lines using statistical an
 ```python
 import sxm_batch_processor as sbp
 
-# Use median row alignment and higher scar sensitivity
+# Use median row alignment, higher scar sensitivity, and custom outlier handling
 sbp.batch_process_directory(
     "data/",
     level_plane=True,
@@ -106,6 +121,27 @@ sbp.batch_process_directory(
     parabolic_sub=True,
     remove_scars_flag=True,
     scar_threshold=2.5,
+    mask_unscanned=True,
+    handle_outliers_flag=True,
+    outlier_method='percentile',
+    verbose=True
+)
+```
+
+### Disable new features for minimal processing
+
+```python
+import sxm_batch_processor as sbp
+
+# Process without masking unscanned areas or handling outliers
+sbp.batch_process_directory(
+    "data/",
+    level_plane=True,
+    align_rows='mean',
+    parabolic_sub=True,
+    remove_scars_flag=True,
+    mask_unscanned=False,           # Disable unscanned area masking
+    handle_outliers_flag=False,     # Disable outlier handling
     verbose=True
 )
 ```
