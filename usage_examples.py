@@ -167,13 +167,13 @@ def example_different_row_alignment_methods():
     print("Example 6: Different Row Alignment Methods")
     print("=" * 70)
     
-    input_file = "path/to/your/file.sxm"
+    input_file = Path("path/to/your/file.sxm")
     
     # Method 1: Mean alignment (default, removes horizontal stripes)
     print("Processing with mean row alignment...")
     output1 = sbp.sxm_to_gwy(
         input_file,
-        output_file=input_file.replace('.sxm', '_mean.gwy'),
+        output_file=input_file.with_stem(f'{input_file.stem}_mean'),
         align_rows='mean'
     )
     
@@ -181,7 +181,7 @@ def example_different_row_alignment_methods():
     print("Processing with median row alignment...")
     output2 = sbp.sxm_to_gwy(
         input_file,
-        output_file=input_file.replace('.sxm', '_median.gwy'),
+        output_file=input_file.with_stem(f'{input_file.stem}_median'),
         align_rows='median'
     )
     
@@ -189,7 +189,7 @@ def example_different_row_alignment_methods():
     print("Processing with match height alignment...")
     output3 = sbp.sxm_to_gwy(
         input_file,
-        output_file=input_file.replace('.sxm', '_match.gwy'),
+        output_file=input_file.with_stem(f'{input_file.stem}_match'),
         align_rows='match_height'
     )
     
@@ -197,7 +197,7 @@ def example_different_row_alignment_methods():
     print("Processing without row alignment...")
     output4 = sbp.sxm_to_gwy(
         input_file,
-        output_file=input_file.replace('.sxm', '_noalign.gwy'),
+        output_file=input_file.with_stem(f'{input_file.stem}_noalign'),
         align_rows=None
     )
     
