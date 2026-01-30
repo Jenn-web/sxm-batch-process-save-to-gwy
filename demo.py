@@ -38,6 +38,8 @@ def main():
     print("      align_rows='mean',")
     print("      parabolic_sub=True,")
     print("      remove_scars_flag=True,")
+    print("      mask_unscanned=True,        # NEW: Mask unscanned areas")
+    print("      handle_outliers_flag=True,  # NEW: Handle outliers")
     print("      verbose=True")
     print("  )")
     print()
@@ -46,13 +48,34 @@ def main():
     print("Example 3: Custom processing settings")
     print("-" * 70)
     print("Code:")
-    print("  # Use median row alignment and higher scar sensitivity")
+    print("  # Use median row alignment and custom outlier handling")
     print("  created_files = sbp.batch_process_directory(")
     print("      'data/',")
-    print("      align_rows='median',  # More robust to outliers")
-    print("      scar_threshold=2.5,   # More sensitive scar detection")
-    print("      parabolic_sub=False,  # Skip parabolic subtraction")
+    print("      align_rows='median',         # More robust to outliers")
+    print("      scar_threshold=2.5,          # More sensitive scar detection")
+    print("      outlier_method='percentile', # Use percentile clipping")
+    print("      percentile_range=(1, 99),    # Custom percentile range")
+    print("      parabolic_sub=False,         # Skip parabolic subtraction")
     print("  )")
+    print()
+    
+    # Example 4: New features demonstration
+    print("Example 4: NEW Features - Unscanned area masking & outlier handling")
+    print("-" * 70)
+    print("Code:")
+    print("  # Enable new features for better color scaling")
+    print("  created_files = sbp.batch_process_directory(")
+    print("      'data/',")
+    print("      mask_unscanned=True,         # Mask zeros/constant areas")
+    print("      handle_outliers_flag=True,   # Handle sharp changes")
+    print("      outlier_method='percentile', # 'clip', 'percentile', or 'median_filter'")
+    print("      percentile_range=(0.5, 99.5) # Percentile bounds")
+    print("  )")
+    print()
+    print("Benefits:")
+    print("  • Unscanned areas (zeros/constants) don't affect color bar")
+    print("  • Sharp changes and outliers are clipped for better visualization")
+    print("  • Percentile method is robust and works well for most data")
     print()
     
     # Show available functions
@@ -67,6 +90,8 @@ def main():
         ('align_rows_median(data)', 'Align rows by median'),
         ('parabolic_subtraction(data)', 'Remove parabolic background'),
         ('remove_scars(data)', 'Remove anomalous lines'),
+        ('mask_unscanned_areas(data)', 'NEW: Mask zeros/constant regions'),
+        ('handle_outliers(data)', 'NEW: Handle sharp changes/outliers'),
         ('process_data(data)', 'Apply full processing pipeline'),
     ]
     
