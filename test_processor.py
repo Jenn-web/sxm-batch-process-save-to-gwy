@@ -193,6 +193,11 @@ def test_mask_unscanned_areas():
     # Check that zeros are masked
     assert np.all(np.isnan(masked_data[10:20, 10:20])), "Zeros should be masked as NaN"
     
+    # Check that constant regions have some masking
+    # (Not all pixels may be masked depending on window size, but center should be)
+    constant_region_masked = np.sum(np.isnan(masked_data[30:40, 30:40]))
+    assert constant_region_masked > 0, "Some constant region pixels should be masked"
+    
     # Check that valid data is preserved
     assert not np.isnan(masked_data[0, 0]), "Valid data should not be masked"
     

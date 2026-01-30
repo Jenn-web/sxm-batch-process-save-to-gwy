@@ -214,7 +214,8 @@ def mask_unscanned_areas(data: np.ndarray,
     
     # Detect constant regions using local standard deviation
     # Simple approach: check if local variation is very small
-    window_size = min(5, max(3, data.shape[0] // 10), max(3, data.shape[1] // 10))
+    # Calculate window size that fits both dimensions
+    window_size = min(5, max(3, min(data.shape[0] // 10, data.shape[1] // 10)))
     
     # Use a simple manual convolution approach for local std
     # Calculate local standard deviation without scipy
@@ -292,10 +293,10 @@ def handle_outliers(data: np.ndarray,
     elif method == 'median_filter':
         # Use simple median filter to smooth sharp changes
         # Manual implementation without scipy
-        kernel_size = 3
         rows, cols = data.shape
         filtered = data.copy()
         
+        # Process interior pixels with 3x3 median filter
         for i in range(1, rows - 1):
             for j in range(1, cols - 1):
                 # Get 3x3 window around pixel
@@ -368,7 +369,8 @@ def process_data(data: np.ndarray,
                  mask_unscanned: bool = True,
                  handle_outliers_flag: bool = True,
                  outlier_method: str = 'percentile',
-                 outlier_sigma: float = 3.0) -> np.ndarray:
+                 outlier_sigma: float = 3.0,
+                 percentile_range: Tuple[float, float] = (0.5, 99.5)) -> np.ndarray:
     """
     Apply processing pipeline to data.
     
@@ -383,6 +385,7 @@ def process_data(data: np.ndarray,
         handle_outliers_flag: Whether to handle outliers and sharp changes
         outlier_method: Method for outlier handling ('clip', 'percentile', or 'median_filter')
         outlier_sigma: Sigma threshold for outlier detection
+        percentile_range: Tuple of (low, high) percentiles for 'percentile' method
         
     Returns:
         Processed data
@@ -420,7 +423,8 @@ def process_data(data: np.ndarray,
     
     # Step 2: Handle outliers and sharp changes (after other processing)
     if handle_outliers_flag:
-        processed = handle_outliers(processed, method=outlier_method, sigma=outlier_sigma)
+        processed = handle_outliers(processed, method=outlier_method, sigma=outlier_sigma, 
+                                   percentile_range=percentile_range)
     
     return processed
 
@@ -435,7 +439,8 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
                mask_unscanned: bool = True,
                handle_outliers_flag: bool = True,
                outlier_method: str = 'percentile',
-               outlier_sigma: float = 3.0) -> Path:
+               outlier_sigma: float = 3.0,
+               percentile_range: Tuple[float, float] = (0.5, 99.5)) -> Path:
     """
     Convert .sxm file to .gwy format with processing.
     
@@ -451,6 +456,7 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
         handle_outliers_flag: Whether to handle outliers and sharp changes
         outlier_method: Method for outlier handling ('clip', 'percentile', or 'median_filter')
         outlier_sigma: Sigma threshold for outlier detection
+        percentile_range: Tuple of (low, high) percentiles for 'percentile' method
         
     Returns:
         Path to created .gwy file
@@ -491,7 +497,8 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
             mask_unscanned=mask_unscanned,
             handle_outliers_flag=handle_outliers_flag,
             outlier_method=outlier_method,
-            outlier_sigma=outlier_sigma
+            outlier_sigma=outlier_sigma,
+            percentile_range=percentile_range
         )
         
         # Get physical size from scan parameters
@@ -549,6 +556,7 @@ def batch_process_directory(directory: Union[str, Path],
                             handle_outliers_flag: bool = True,
                             outlier_method: str = 'percentile',
                             outlier_sigma: float = 3.0,
+                            percentile_range: Tuple[float, float] = (0.5, 99.5),
                             verbose: bool = True) -> List[Path]:
     """
     Process all .sxm files in directory tree and save as .gwy files.
@@ -564,6 +572,7 @@ def batch_process_directory(directory: Union[str, Path],
         handle_outliers_flag: Whether to handle outliers and sharp changes
         outlier_method: Method for outlier handling ('clip', 'percentile', or 'median_filter')
         outlier_sigma: Sigma threshold for outlier detection
+        percentile_range: Tuple of (low, high) percentiles for 'percentile' method
         verbose: Whether to print progress messages
         
     Returns:
@@ -592,7 +601,8 @@ def batch_process_directory(directory: Union[str, Path],
                 mask_unscanned=mask_unscanned,
                 handle_outliers_flag=handle_outliers_flag,
                 outlier_method=outlier_method,
-                outlier_sigma=outlier_sigma
+                outlier_sigma=outlier_sigma,
+                percentile_range=percentile_range
             )
             created_files.append(gwy_file)
             
