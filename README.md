@@ -141,9 +141,8 @@ for key in gwy_obj.keys():
 
 - Python 3.8+
 - nanonispy >= 1.1.0
-- gwyfile >= 1.0.0
+- gwyfile >= 0.2.0
 - numpy >= 1.20.0
-- scipy >= 1.7.0
 - jupyter >= 1.0.0 (for notebook examples)
 
 ## Notes

@@ -118,7 +118,13 @@ def align_rows_match_height(data: np.ndarray, reference: str = 'first') -> np.nd
         
     Returns:
         Row-aligned data
+        
+    Raises:
+        ValueError: If reference is not 'first' or 'previous'
     """
+    if reference not in ('first', 'previous'):
+        raise ValueError(f"reference must be 'first' or 'previous', got '{reference}'")
+    
     aligned = data.astype(np.float64, copy=True)
     
     if reference == 'first':
@@ -147,7 +153,13 @@ def parabolic_subtraction(data: np.ndarray, axis: int = 1) -> np.ndarray:
         
     Returns:
         Data with parabolic background subtracted
+        
+    Raises:
+        ValueError: If axis is not 0 or 1
     """
+    if axis not in (0, 1):
+        raise ValueError(f"axis must be 0 or 1, got {axis}")
+    
     corrected = data.copy()
     
     if axis == 1:  # Row-wise
@@ -236,7 +248,14 @@ def process_data(data: np.ndarray,
         
     Returns:
         Processed data
+        
+    Raises:
+        ValueError: If align_rows is not None, 'mean', 'median', or 'match_height'
     """
+    # Validate align_rows parameter
+    if align_rows is not None and align_rows not in ('mean', 'median', 'match_height'):
+        raise ValueError(f"align_rows must be None, 'mean', 'median', or 'match_height', got '{align_rows}'")
+    
     # Ensure data is float type for processing
     processed = data.astype(np.float64, copy=True)
     
@@ -296,9 +315,16 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
     gwy_obj = gwyfile.GwyObject()
     
     # Process each channel in the SXM file
+    channel_idx = 0
     for channel_name, channel_data in scan.signals.items():
-        # Get data and metadata
-        data = channel_data['forward']  # Use forward scan
+        # Get data - try forward scan first, fallback to backward
+        if 'forward' in channel_data:
+            data = channel_data['forward']
+        elif 'backward' in channel_data:
+            data = channel_data['backward']
+        else:
+            # Skip this channel if no data available
+            continue
         
         # Process the data
         processed_data = process_data(
@@ -309,9 +335,6 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
             remove_scars_flag=remove_scars_flag,
             scar_threshold=scar_threshold
         )
-        
-        # Get physical dimensions
-        height, width = processed_data.shape
         
         # Get physical size from scan parameters
         # SXM files store size in meters
@@ -327,16 +350,16 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
             si_unit_z=gwyfile.GwySIUnit(channel_data.get('unit', 'm'))
         )
         
-        # Add to GWY object
-        channel_key = f"/{len(gwy_obj)}/data"
+        # Add to GWY object with correct channel indexing
+        channel_key = f"/{channel_idx}/data"
         gwy_obj[channel_key] = datafield
         
         # Add metadata
-        title_key = f"/{len(gwy_obj)-1}/data/title"
+        title_key = f"/{channel_idx}/data/title"
         gwy_obj[title_key] = channel_name
         
         # Add original metadata as meta
-        meta_key = f"/{len(gwy_obj)-1}/meta"
+        meta_key = f"/{channel_idx}/meta"
         meta = gwyfile.GwyObject()
         
         # Store important scan parameters
@@ -345,10 +368,12 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
                 try:
                     # Convert value to string for storage in metadata
                     meta[key] = str(value)
-                except:
+                except (TypeError, ValueError):
+                    # Skip values that can't be converted to string
                     pass
         
         gwy_obj[meta_key] = meta
+        channel_idx += 1
     
     # Save GWY file
     gwyfile.dump(gwy_obj, str(output_file))

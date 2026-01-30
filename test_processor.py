@@ -139,6 +139,36 @@ def test_find_sxm_files():
     print(f"  ✓ File finding works correctly (found {len(files)} .sxm files)")
 
 
+def test_parameter_validation():
+    """Test parameter validation"""
+    print("Testing parameter validation...")
+    
+    data = np.random.randn(100, 100)
+    
+    # Test invalid align_rows
+    try:
+        sbp.process_data(data, align_rows='invalid')
+        assert False, "Should raise ValueError for invalid align_rows"
+    except ValueError as e:
+        assert 'align_rows' in str(e)
+    
+    # Test invalid parabolic axis
+    try:
+        sbp.parabolic_subtraction(data, axis=2)
+        assert False, "Should raise ValueError for invalid axis"
+    except ValueError as e:
+        assert 'axis' in str(e)
+    
+    # Test invalid reference in align_rows_match_height
+    try:
+        sbp.align_rows_match_height(data, reference='invalid')
+        assert False, "Should raise ValueError for invalid reference"
+    except ValueError as e:
+        assert 'reference' in str(e)
+    
+    print("  ✓ Parameter validation works correctly")
+
+
 def main():
     print("=" * 60)
     print("SXM Batch Processor - Test Suite")
@@ -153,6 +183,7 @@ def main():
         test_remove_scars,
         test_process_data,
         test_find_sxm_files,
+        test_parameter_validation,
     ]
     
     passed = 0
