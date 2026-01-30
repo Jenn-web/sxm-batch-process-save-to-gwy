@@ -166,7 +166,124 @@ def test_parameter_validation():
     except ValueError as e:
         assert 'reference' in str(e)
     
+    # Test invalid outlier method
+    try:
+        sbp.handle_outliers(data, method='invalid')
+        assert False, "Should raise ValueError for invalid method"
+    except ValueError as e:
+        assert 'method' in str(e)
+    
     print("  ✓ Parameter validation works correctly")
+
+
+def test_mask_unscanned_areas():
+    """Test masking of unscanned areas"""
+    print("Testing mask_unscanned_areas...")
+    
+    # Create data with unscanned areas (zeros)
+    data = np.random.randn(50, 50) + 10
+    # Add a region of zeros (unscanned area)
+    data[10:20, 10:20] = 0
+    # Add a region with constant values
+    data[30:40, 30:40] = 5.0
+    
+    # Mask unscanned areas
+    mask, masked_data = sbp.mask_unscanned_areas(data)
+    
+    # Check that zeros are masked
+    assert np.all(np.isnan(masked_data[10:20, 10:20])), "Zeros should be masked as NaN"
+    
+    # Check that valid data is preserved
+    assert not np.isnan(masked_data[0, 0]), "Valid data should not be masked"
+    
+    print("  ✓ Unscanned area masking works correctly")
+
+
+def test_handle_outliers_clip():
+    """Test outlier handling with clip method"""
+    print("Testing handle_outliers with clip method...")
+    
+    # Create data with outliers
+    data = np.random.randn(100, 100)
+    data[50, 50] = 100  # Add outlier
+    
+    # Handle outliers
+    processed = sbp.handle_outliers(data, method='clip', sigma=3.0)
+    
+    # Check that outlier is clipped
+    assert abs(processed[50, 50]) < abs(data[50, 50]), "Outlier should be clipped"
+    
+    print("  ✓ Outlier handling with clip method works correctly")
+
+
+def test_handle_outliers_percentile():
+    """Test outlier handling with percentile method"""
+    print("Testing handle_outliers with percentile method...")
+    
+    # Create data with outliers
+    data = np.random.randn(100, 100)
+    data[50, 50] = 100  # Add outlier
+    data[60, 60] = -100  # Add negative outlier
+    
+    # Handle outliers
+    processed = sbp.handle_outliers(data, method='percentile', percentile_range=(1, 99))
+    
+    # Check that outliers are clipped to percentile bounds
+    assert processed[50, 50] < data[50, 50], "High outlier should be clipped"
+    assert processed[60, 60] > data[60, 60], "Low outlier should be clipped"
+    
+    print("  ✓ Outlier handling with percentile method works correctly")
+
+
+def test_handle_outliers_median_filter():
+    """Test outlier handling with median filter method"""
+    print("Testing handle_outliers with median_filter method...")
+    
+    # Create data with sharp changes
+    data = np.random.randn(100, 100)
+    data[50, 50] = 20  # Add sharp change
+    
+    # Handle outliers
+    processed = sbp.handle_outliers(data, method='median_filter', sigma=3.0)
+    
+    # Check that sharp change is smoothed
+    assert abs(processed[50, 50]) < abs(data[50, 50]), "Sharp change should be smoothed"
+    
+    print("  ✓ Outlier handling with median_filter method works correctly")
+
+
+def test_process_data_with_new_features():
+    """Test complete processing pipeline with new features"""
+    print("Testing process_data with new features...")
+    
+    # Create synthetic data with various issues
+    x, y = np.meshgrid(np.arange(100), np.arange(100))
+    data = (2 * x + 3 * y + 10).astype(np.float64)
+    data += 0.01 * x**2  # Parabolic background
+    for i in range(100):
+        data[i, :] += i * 0.1  # Row offsets
+    data[50, :] += 5  # Scar
+    data += np.random.randn(100, 100) * 0.1  # Noise
+    data[10:15, 10:15] = 0  # Unscanned area
+    data[80, 80] = 100  # Outlier
+    
+    # Process with all options including new features
+    processed = sbp.process_data(
+        data,
+        level_plane=True,
+        align_rows='mean',
+        parabolic_sub=True,
+        remove_scars_flag=True,
+        mask_unscanned=True,
+        handle_outliers_flag=True,
+        outlier_method='percentile'
+    )
+    
+    # Check that data is processed
+    assert processed.shape == data.shape, "Shape should be preserved"
+    assert np.any(np.isnan(processed)), "Should have NaN in unscanned areas"
+    
+    print("  ✓ Complete processing pipeline with new features works correctly")
 
 
 def main():
@@ -184,6 +301,11 @@ def main():
         test_process_data,
         test_find_sxm_files,
         test_parameter_validation,
+        test_mask_unscanned_areas,
+        test_handle_outliers_clip,
+        test_handle_outliers_percentile,
+        test_handle_outliers_median_filter,
+        test_process_data_with_new_features,
     ]
     
     passed = 0
