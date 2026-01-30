@@ -11,8 +11,9 @@ import os
 import numpy as np
 from pathlib import Path
 from typing import List, Tuple, Optional, Union
-import nanonispy as nap
+import nanonispy2 as nap
 import gwyfile
+import gwyfile.objects as gwyobj
 
 
 def find_sxm_files(directory: Union[str, Path]) -> List[Path]:
@@ -312,7 +313,7 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
     scan = nap.read.Scan(str(sxm_file))
     
     # Create GWY file object
-    gwy_obj = gwyfile.GwyObject()
+    container = gwyobj.GwyContainer()
     
     # Process each channel in the SXM file
     channel_idx = 0
@@ -342,25 +343,25 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
         y_size = scan.header['scan_range'][1]  # in meters
         
         # Create GWY DataField
-        datafield = gwyfile.GwyDataField(
+        datafield = gwyobj.GwyDataField(
             processed_data,
             xreal=x_size,
             yreal=y_size,
-            si_unit_xy=gwyfile.GwySIUnit('m'),
-            si_unit_z=gwyfile.GwySIUnit(channel_data.get('unit', 'm'))
+            si_unit_xy=gwyobj.GwySIUnit('m'),
+            si_unit_z=gwyobj.GwySIUnit(channel_data.get('unit', 'm'))
         )
         
         # Add to GWY object with correct channel indexing
         channel_key = f"/{channel_idx}/data"
-        gwy_obj[channel_key] = datafield
+        container[channel_key] = datafield
         
         # Add metadata
         title_key = f"/{channel_idx}/data/title"
-        gwy_obj[title_key] = channel_name
+        container[title_key] = 'Z (Forward)'
         
         # Add original metadata as meta
         meta_key = f"/{channel_idx}/meta"
-        meta = gwyfile.GwyObject()
+        meta = gwyobj.GwyContainer()
         
         # Store important scan parameters
         if hasattr(scan, 'header') and scan.header:
@@ -372,11 +373,11 @@ def sxm_to_gwy(sxm_file: Union[str, Path],
                     # Skip values that can't be converted to string
                     pass
         
-        gwy_obj[meta_key] = meta
+        container[meta_key] = meta
         channel_idx += 1
     
     # Save GWY file
-    gwyfile.dump(gwy_obj, str(output_file))
+    container.tofile(str(output_file))
     
     return output_file
 
